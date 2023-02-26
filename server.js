@@ -33,6 +33,7 @@ io.on('connection', (socket) => {
       });
 });
 
+//in server side renderning vew engine is required so we use ejs
 app.set('view engine','ejs');
 app.use('/',express.static(__dirname + '/public'));
 // app.use('/chat/:roomId',express.static(__dirname + '/view'));
