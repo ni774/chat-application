@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=<device-width>, initial-scale=1.0">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+        rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD"
+        crossorigin="anonymous">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+        <link rel="stylesheet" href="./public/index.css"/>
+        <title>Document</title>
+    <style>
+        .container{
+            height:38em;
+        }
+        #msglist{
+           
+            height:23em;
+        }
+        input{
+            width:50%;
+            margin:auto;
+        }
+        input:nth-child(2){
+            height:3em;
+          
+        }
+        .msglist-self{
+            position:relative;
+            left: 3em;
+        }
+        .msglist-other{
+            position:relative;
+            right: 3em;
+        }
+        li{
+            background: rgb(159, 233, 159);
+            margin-bottom: 0.4em;
+            width: max-content;
+            border-radius: .5em;
+            height: 2em;
+        }
+        #btn{
+            position: relative;
+            bottom: 3.5em;
+            left: 12em;
+            text-align:center;
+            width:3em;
+            border-radius:.3em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container bg-primary-subtle text-center h-500 w-50" id="" >
+        <h1>
+            chatbox
+        </h1>
+        <!-- <%= name%> -->
+        <div id="status"><span id="userContainer"></span> is typing...</div>
+        <input id="startchat" type="hidden" data-roomid="<%=id%>"></input>
+        <div class="d-flex flex-column mb-3">
+            <input type="text" id="username" placeholder="username">
+            <input type="text" id="newmsg" placeholder="message">
+        </div>
+        
+        
+        <button id="btn" class="bg-primary"><span class="material-symbols-outlined">
+            send
+            </span>
+        </button>
+        <div id="msglist" class="overflow-y-scroll overflow-x-hidden">
+            <ul>
+                <% for(let i=0;i<chats.length;i++){%>
+                     <li> <%=chats[i].user %>: <%=chats[i].content %> </li>
+                <% } %> 
+             </ul>
+        </div>
+       
+    </div>
+   
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var socket=io();
+        let typing=false;
+        let user;
+        let userContainer=document.getElementById('userContainer');
+        let startchat=document.getElementById('startchat');
+        let username = document.getElementById('username');
+        let btn =document.getElementById('btn');
+        let inputMsg=document.getElementById('newmsg')
+        let msgList=document.getElementById('msglist')
+        let statusDiv = document.getElementById('status');
+        statusDiv.style.visibility='hidden';
+
+        
+        socket.emit('join_room',{
+            roomid: startchat.getAttribute('data-roomid')
+        });
+        
+        btn.onclick = function sendmsg(){
+            socket.emit('msg_send',{
+                msg:inputMsg.value,
+                username: username.value,
+                roomid:startchat.getAttribute('data-roomid')
+            });
+            inputMsg.value=" ";
+        }
+
+
+        socket.on('msg_rcvd',(data)=>{
+            let limsg=document.createElement('li');
+            limsg.innerText=`${data.username}: ${data.msg}`;
+            if(data.username==username.value){
+                limsg.classList.add("msglist-self");
+            }else{
+                limsg.classList.add("msglist-other");
+            }
+            msgList.appendChild(limsg);
+        })
+        
+        inputMsg.addEventListener('keypress',(e)=>{
+            typing=true;
+           socket.emit('typing',{
+            roomid: startchat.getAttribute('data-roomid'),
+            user: username.value
+           });
+        })
+
+        socket.on("someone_typing",(data)=>{
+            
+            userContainer.innerText=data.user;
+            statusDiv.style.visibility='visible';
+            setTimeout(()=>{
+                if(typing) typing=false;
+                statusDiv.style.visibility='hidden';
+            },2000)
+        })
+       
+    </script>
+</body>
+</html>
